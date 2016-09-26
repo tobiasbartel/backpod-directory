@@ -18,7 +18,12 @@ class Command(BaseCommand):
         all_podcasts = Itunes.objects.all().order_by('-modified')
         paginator = Paginator(all_podcasts, 200)
         for my_page in paginator.page_range:
+            my_itunes_ids_list = []
+            for one_object in my_page:
+                my_itunes_ids_list.append(one_object.collection_id)
+                my_itunes_ids_string = ','.join(map(str, my_itunes_ids_list))
+
             if DEBUG:
-                update_podcast_by_id(paginator.page(my_page))
+                update_podcast_by_id(my_itunes_ids_string)
             else:
-                update_itunes_podcast.delay(paginator.page(my_page))
+                update_itunes_podcast.delay(my_itunes_ids_string)

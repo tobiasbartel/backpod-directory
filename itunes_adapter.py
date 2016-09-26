@@ -18,14 +18,9 @@ def import_ids(json_file):
             logger.info('Processed "%s" successfully' % json_file)
 
 
-def update_podcast_by_id(itunes_objects):
-    my_itunes_ids = []
-    for one_object in itunes_objects:
-        my_itunes_ids.append(one_object.collection_id)
-    my_list = ','.join(map(str, my_itunes_ids))
-
+def update_podcast_by_id(itunes_ids):
     try:
-        response = urllib.urlopen("https://itunes.apple.com/lookup?id=%s" % my_list)
+        response = urllib.urlopen("https://itunes.apple.com/lookup?id=%s" % itunes_ids)
         json_data = json.loads(response.read())
         for podcast_data in json_data['results']:
             one_podcast = Itunes.objects.get(collection_id=podcast_data['collectionId'])
@@ -51,7 +46,7 @@ def update_podcast_by_id(itunes_objects):
                 one_podcast.collection_id, one_podcast.collection_name))
         return True
     except Exception as inst:
-        logger.error("Could not update iTunes IDs: %s " % (my_list,))
+        logger.error("Could not update iTunes IDs: %s (%s - %s)" % (itunes_ids, type(inst), inst.args))
         return False
 
 
