@@ -2,6 +2,7 @@ import json
 import logging
 import urllib
 
+from pprint import pprint
 from directory.models import *
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,8 @@ def update_podcast_by_id(itunes_ids):
             one_podcast.artwork_100 = podcast_data['artworkUrl100']
             one_podcast.artwork_600 = podcast_data['artworkUrl600']
             one_podcast.save()
+            pprint("Podcast \'%s - %s\' updated from the iTunes directory." % (
+                one_podcast.collection_id, one_podcast.collection_name))
             logger.info("Podcast \'%s - %s\' updated from the iTunes directory." % (
                 one_podcast.collection_id, one_podcast.collection_name))
         return True

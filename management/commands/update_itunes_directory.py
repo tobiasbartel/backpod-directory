@@ -19,7 +19,7 @@ class Command(BaseCommand):
         paginator = Paginator(all_podcasts, 200)
         for my_page in paginator.page_range:
             my_itunes_ids_list = []
-            for one_object in my_page:
+            for one_object in paginator.page(my_page):
                 my_itunes_ids_list.append(one_object.collection_id)
                 my_itunes_ids_string = ','.join(map(str, my_itunes_ids_list))
 
