@@ -29,6 +29,9 @@ class ItunesGenre(models.Model):
   number = models.PositiveIntegerField(db_index=True)
   name = models.CharField(max_length=200, db_index=True)
 
+  class Meta:
+      unique_together = (('number', 'name'),)
+
   def __unicode__(self):
     return unicode(self.name)
 

@@ -11,15 +11,11 @@ def import_ids(json_file):
     with open('/home/tbartel/Projects/podback/result.json') as data_file:
       data = json.load(data_file)
       for podcast in data:
-        try:
-          itunes_podcast = Itunes.objects.get(collection_id=podcast['itunesId'])
-        except Itunes.DoesNotExist:
-          itunes_podcast = Itunes(collection_id=podcast['itunesId'])
-
-        itunes_podcast.collection_name=podcast['name']
-        itunes_podcast.collection_view_url=podcast['url']
-        itunes_podcast.save()
-        logger.info('Processed "%s" successfully' % json_file)
+          itunes_podcast, created = Itunes.objects.get_or_create(collection_id=podcast['itunesId'])
+          itunes_podcast.collection_name=podcast['name']
+          itunes_podcast.collection_view_url=podcast['url']
+          itunes_podcast.save()
+          logger.info('Processed "%s" successfully' % json_file)
 
 def update_all_podcasts():
   for one_podcast in Itunes.objects.all().order_by('-modified'):
@@ -56,28 +52,21 @@ def update_podcast_by_id(itunes_id):
             one_podcast.save()
             logger.info("Podcast \'%s - %s\' updated from the iTunes directory." % (one_podcast.collection_id, one_podcast.collection_name))
         return True
-    except:
-        logger.error("Could not update \'%s\'" % itunes_id)
+    except Exception as inst:
+        logger.error("Could not update %s \'%s \n %s\' " % (itunes_id,
+            type(inst), inst))
         return False
 
 def handle_country(country_name):
-  try:
-    itunes_country = ItunesCountry.objects.get(name=country_name)
-  except ItunesCountry.DoesNotExist:
-    itunes_country = ItunesCountry(name=country_name)
-  itunes_country.save()
+  itunes_country, created = ItunesCountry.objects.get_or_create(name=country_name)
   return itunes_country
 
 def handle_genre(genre_ids, genre_names):
   my_genres = []
   for key, number in enumerate(genre_ids):
-    try:
-      itunes_genre = ItunesGenre.objects.get(number=number)
-    except:
-      itunes_genre = ItunesGenre(number=number, name=genre_names[key])
-      itunes_genre.save()
+    itunes_genre, created = ItunesGenre.objects.get_or_create(number=number, name=genre_names[key])
     my_genres.append(itunes_genre)
-    return my_genres
+  return my_genres
 
 def handle_primary_genre(name):
   try:
