@@ -1,34 +1,31 @@
-from main.settings import DEBUG
-from directory.models import Itunes, ItunesGenre, ItunesCountry
-from pprint import pprint
-import json, urllib
-from time import sleep
+import json
 import logging
+import urllib
+
+from directory.models import *
 
 logger = logging.getLogger(__name__)
 
+
 def import_ids(json_file):
     with open('/home/tbartel/Projects/podback/result.json') as data_file:
-      data = json.load(data_file)
-      for podcast in data:
-          itunes_podcast, created = Itunes.objects.get_or_create(collection_id=podcast['itunesId'])
-          itunes_podcast.collection_name=podcast['name']
-          itunes_podcast.collection_view_url=podcast['url']
-          itunes_podcast.save()
-          logger.info('Processed "%s" successfully' % json_file)
+        data = json.load(data_file)
+        for podcast in data:
+            itunes_podcast, created = Itunes.objects.get_or_create(collection_id=podcast['itunesId'])
+            itunes_podcast.collection_name = podcast['name']
+            itunes_podcast.collection_view_url = podcast['url']
+            itunes_podcast.save()
+            logger.info('Processed "%s" successfully' % json_file)
 
-def update_all_podcasts():
-  for one_podcast in Itunes.objects.all().order_by('-modified'):
-      logger.info('Updating \'%s\'' % one_podcast)
-      itunes_id = one_podcast.collection_id
-      if DEBUG:
-        pprint(update_podcast_by_id(itunes_id))
-      else:
-        update_itunes_podcast.delay(itunes_id)
 
-def update_podcast_by_id(itunes_id):
+def update_podcast_by_id(itunes_objects):
+    my_itunes_ids = []
+    for one_object in itunes_objects:
+        my_itunes_ids.append(one_object.collection_id)
+    my_list = ','.join(map(str, my_itunes_ids))
+
     try:
-        response = urllib.urlopen("https://itunes.apple.com/lookup?id=%s" % itunes_id)
+        response = urllib.urlopen("https://itunes.apple.com/lookup?id=%s" % my_list)
         json_data = json.loads(response.read())
         for podcast_data in json_data['results']:
             one_podcast = Itunes.objects.get(collection_id=podcast_data['collectionId'])
@@ -36,13 +33,13 @@ def update_podcast_by_id(itunes_id):
             one_podcast.collection_ensored_name = podcast_data['collectionCensoredName']
             one_podcast.collection_explicitness = podcast_data['trackExplicitness']
             if 'contentAdvisoryRating' in podcast_data:
-               one_podcast.content_advisory_rating = podcast_data['contentAdvisoryRating']
+                one_podcast.content_advisory_rating = podcast_data['contentAdvisoryRating']
             one_podcast.country = handle_country(podcast_data['country'])
             one_podcast.genre = handle_genre(podcast_data['genreIds'], podcast_data['genres'])
             one_podcast.primary_genre = handle_primary_genre(podcast_data['primaryGenreName'])
             one_podcast.feed_url = podcast_data['feedUrl']
             if 'releaseDate' in podcast_data:
-               one_podcast.release_date = podcast_data['releaseDate']
+                one_podcast.release_date = podcast_data['releaseDate']
             one_podcast.collection_view_url = podcast_data['collectionViewUrl']
             one_podcast.artist_name = podcast_data['artistName']
             one_podcast.artwork_30 = podcast_data['artworkUrl30']
@@ -50,28 +47,31 @@ def update_podcast_by_id(itunes_id):
             one_podcast.artwork_100 = podcast_data['artworkUrl100']
             one_podcast.artwork_600 = podcast_data['artworkUrl600']
             one_podcast.save()
-            logger.info("Podcast \'%s - %s\' updated from the iTunes directory." % (one_podcast.collection_id, one_podcast.collection_name))
+            logger.info("Podcast \'%s - %s\' updated from the iTunes directory." % (
+                one_podcast.collection_id, one_podcast.collection_name))
         return True
     except Exception as inst:
-        logger.error("Could not update %s \'%s \n %s\' " % (itunes_id,
-            type(inst), inst))
+        logger.error("Could not update iTunes IDs: %s " % (my_list,))
         return False
 
+
 def handle_country(country_name):
-  itunes_country, created = ItunesCountry.objects.get_or_create(name=country_name)
-  return itunes_country
+    itunes_country, created = ItunesCountry.objects.get_or_create(name=country_name)
+    return itunes_country
+
 
 def handle_genre(genre_ids, genre_names):
-  my_genres = []
-  for key, number in enumerate(genre_ids):
-    itunes_genre, created = ItunesGenre.objects.get_or_create(number=number, name=genre_names[key])
-    my_genres.append(itunes_genre)
-  return my_genres
+    my_genres = []
+    for key, number in enumerate(genre_ids):
+        itunes_genre, created = ItunesGenre.objects.get_or_create(number=number, name=genre_names[key])
+        my_genres.append(itunes_genre)
+    return my_genres
+
 
 def handle_primary_genre(name):
-  try:
-      itunes_genre = ItunesGenre.objects.get(name=name)
-      return itunes_genre
-  except:
-      logger.exception("Primary genre was \'%s\' not found in the database." % name)
-      return null
+    try:
+        itunes_genre = ItunesGenre.objects.get(name=name)
+        return itunes_genre
+    except:
+        logger.exception("Primary genre was \'%s\' not found in the database." % name)
+        return None
