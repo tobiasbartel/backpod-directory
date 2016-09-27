@@ -1,10 +1,8 @@
-from directory.models import Itunes, ItunesGenre, ItunesCountry
-from directory.itunes_adapter import update_podcast_by_id
-from pprint import pprint
-import json, urllib
-from time import sleep
-from celery import task
 import logging
+
+from celery import task
+
+from directory.itunes_adapter import update_podcast_by_id
 
 logger = logging.getLogger(__name__)
 
