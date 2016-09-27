@@ -15,7 +15,8 @@ class Command(BaseCommand):
     help = ''
 
     def handle(self, *args, **options):
-        all_podcasts = Itunes.objects.all().order_by('-modified')
+        all_podcasts = Itunes.objects.all().order_by('modified')
+        all_podcasts = all_podcasts.filter(feed_url = None)
         paginator = Paginator(all_podcasts, 200)
         for my_page in paginator.page_range:
             my_itunes_ids_list = []
